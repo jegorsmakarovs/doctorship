@@ -229,7 +229,7 @@ const Home = () => {
                     <a href="/" className="active">DOCTORSHIP</a>
                     <a id="account" href="/auth">{user ? "Account" : "Log in / Register"}</a>
                     <a href="/qrscan">{user ? "Scan QR" : null}</a>
-
+                    <a href="/history">History</a>
                     <a href="javascript:void(0);" className="icon" onClick={burgerNavBar}>
                         <i className="fa fa-bars"></i>
                     </a>
