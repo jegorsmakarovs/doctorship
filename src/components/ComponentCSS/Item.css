@@ -1,0 +1,118 @@
+body {
+    place-items: top;
+    font-family:Arial, Helvetica, sans-serif;
+    margin: 0;
+}
+@keyframes unblur {
+  from {filter:blur(8px)}
+  to {filter:blur(0px)}
+}
+.danger{
+    background-color: #fc7171;
+    color: #000000;
+    border-radius: 15px;
+    text-align: center;
+    padding-left: 30px;
+    padding-right: 30px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.warning{
+    background-color: #ffe53f;
+    color: #000000;
+    text-align: center;
+    border-radius: 15px;
+    padding-left: 30px;
+    padding-right: 30px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.back{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.back:before{
+    
+    content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: -1;
+
+  display: block;
+  background-image: url('../../background.JPG');
+  background-size:cover;
+  background-position: center;
+  width: 100%;
+  height: 100%;
+
+  filter: blur(5px);
+
+}
+
+.item-inner{
+    position: relative;
+    padding-left: 30px;
+    padding-right: 30px;
+    max-width: fit-content;
+    background-color: white;
+    border-radius: 30px;
+    animation: unblur 1.5s;
+}
+
+.item-inner h1{
+    text-align: center;
+    background-color: #0A66C2;
+    color: #ffffff;
+    border-radius: 30px;
+    padding-left: 30px;
+    padding-right: 30px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.item-inner h2{
+    text-align:center;
+    background-color: #0A66C2;
+    color: #ffffff;
+    border-radius: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    font-size: large;
+    font-weight: lighter;
+    padding-bottom: 3px;
+    
+}
+
+.take{
+display: flex;
+justify-content: center;
+gap: 5px;
+}
+
+.take input{
+    width: 70%;
+    height: 35px;
+    border-radius: 15px;
+}
+
+.itemBtns{
+    display: flex;
+    flex-direction: column;
+}
+
+.item-inner button {
+    margin-bottom:10px;
+}
