@@ -189,7 +189,9 @@ const Home = () => {
             before: quantity, 
             after: newQty, 
             takenAt: serverTimestamp(),
-            by: user?.uid || null 
+            by: user?.uid || null,
+            recipientName: "",
+            diagnosis: "" 
         });
         setSubtractBtnPopup(false);
         getMedicineList();

@@ -79,3 +79,22 @@
   line-height: 1;
 }
 .icon-btn:hover { opacity: 0.8; }
+.diagnosis-cell {
+  min-width: 220px;
+}
+
+.diagnosis-view,
+.diagnosis-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.diagnosis-input {
+  padding: 6px 8px;
+  border: 1px solid #cfd8dc;
+  border-radius: 6px;
+  min-width: 180px;
+}
+

@@ -12,6 +12,8 @@ const History = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editingValue, setEditingValue] = useState("");
+  const [editingDiagnosisId, setEditingDiagnosisId] = useState(null);
+  const [editingDiagnosisValue, setEditingDiagnosisValue] = useState("");
   const navigate = useNavigate();
 
   const startEditRecipient = (log) => {
@@ -36,9 +38,36 @@ const saveRecipient = async (log) => {
     cancelEditRecipient();
   } catch (e) {
     console.error(e);
-    alert("Не удалось сохранить имя. Попробуй ещё раз.");
+    alert("Failed to save the recipient name. Please try again.");
   }
 };  
+
+const startEditDiagnosis = (log) => {
+  setEditingDiagnosisId(log.id);
+  setEditingDiagnosisValue(log.diagnosis || "");
+};
+
+const cancelEditDiagnosis = () => {
+  setEditingDiagnosisId(null);
+  setEditingDiagnosisValue("");
+};
+
+const saveDiagnosis = async (log) => {
+  try {
+    if (!userId) return;
+    const usageDocRef = doc(db, "medicine", userId, "stock", log.medId, "usage", log.id);
+    await updateDoc(usageDocRef, { diagnosis: editingDiagnosisValue.trim() });
+
+    setLogs((prev) =>
+      prev.map((l) => (l.id === log.id ? { ...l, diagnosis: editingDiagnosisValue.trim() } : l))
+    );
+    cancelEditDiagnosis();
+  } catch (e) {
+    console.error(e);
+    alert("Failed to save the diagnosis. Please try again.");
+  }
+};
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -78,10 +107,12 @@ const saveRecipient = async (log) => {
     fetchHistory();
   }, [userId]);
 
-  const formatDate = (ts) => {
+    const formatDate = (ts) => {
     if (!ts) return "";
-    return new Date(ts.seconds * 1000).toLocaleString("en-GB");
-  };
+    const date = new Date(ts.seconds * 1000);
+    return date.toUTCString();
+    };
+
 
   return (
     <div className="history-page">
@@ -99,6 +130,7 @@ const saveRecipient = async (log) => {
               <th>Before</th>
               <th>After</th>
               <th>Recipient</th>
+              <th>Diagnosis</th>
               <th>Date</th>
             </tr>
           </thead>
@@ -138,6 +170,36 @@ const saveRecipient = async (log) => {
                         </button>
                         </div>
                     )}
+                    </td>
+                    <td className="diagnosis-cell">
+                        {editingDiagnosisId === log.id ? (
+                            <div className="diagnosis-edit">
+                            <input
+                                className="diagnosis-input"
+                                value={editingDiagnosisValue}
+                                placeholder="Diagnosis"
+                                onChange={(e) => setEditingDiagnosisValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                if (e.key === "Enter") saveDiagnosis(log);
+                                if (e.key === "Escape") cancelEditDiagnosis();
+                                }}
+                                autoFocus
+                            />
+                            <button className="icon-btn" title="Save" onClick={() => saveDiagnosis(log)}>✅</button>
+                            <button className="icon-btn" title="Cancel" onClick={cancelEditDiagnosis}>✖️</button>
+                            </div>
+                        ) : (
+                            <div className="diagnosis-view">
+                            <span>{log.diagnosis && log.diagnosis.length ? log.diagnosis : "-"}</span>
+                            <button
+                                className="icon-btn"
+                                title="Edit diagnosis"
+                                onClick={() => startEditDiagnosis(log)}
+                            >
+                                ✏️
+                            </button>
+                            </div>
+                        )}
                     </td>
                 <td>{formatDate(log.takenAt)}</td>
               </tr>
