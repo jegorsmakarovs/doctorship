@@ -9,6 +9,8 @@ import Home from "./components/Home";
 import Authorisation from "./components/Authorisation";
 import QRScan from "./components/QRScan";
 import Item from "./components/Item";
+import History from "./components/History";
+
 
 function App() {
     return (
@@ -30,6 +32,10 @@ function App() {
                     <Route
                         path="/qrscan"
                         element={<QRScan />}
+                    />
+                    <Route
+                        path="/history"
+                        element={<History />}
                     />
                 </Routes>
             </BrowserRouter>
