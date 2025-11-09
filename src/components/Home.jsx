@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {auth} from "../config/firebase";
 import {db} from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import {getDocs, collection, doc, addDoc, deleteDoc, updateDoc, query, orderBy} from "firebase/firestore"
+import {getDocs, collection, doc, addDoc, deleteDoc, updateDoc, query, orderBy, serverTimestamp} from "firebase/firestore"
 import 'bootstrap';
 import { useNavigate } from "react-router-dom";
 import AddMedicinePopup from "./AddMedicinePopup";
@@ -46,6 +46,7 @@ const Home = () => {
     const [subtractBtnPopup , setSubtractBtnPopup] = useState(false); //FOR SUBTRACT ITEM QUANTITY BUTTON
     const [selectedId, setSelectedId] = useState("");
     const [currentQty, setCurrentQty] = useState(0);
+    const [selectedName, setSelectedName] = useState("");
 
     //AUTH CHECK AND USERID STATE
     const [user, setUser] = useState(null);
@@ -168,11 +169,34 @@ const Home = () => {
     }
 
     //SUBTRACTS AMOUNT IN POPUP FROM QUANTITY OF MEDICINE
-    const subtractMedicineQuantity = async (id, quantity, taken) => {
-         const medicineDoc = doc (db, "medicine", userid, "stock", id);
-         await updateDoc(medicineDoc, {quantity: (quantity-taken)});
-         setSubtractBtnPopup(false);
-         getMedicineList();
+    const subtractMedicineQuantity = async (id, quantity, taken, medName) => {
+        try {
+            if (!taken || taken <= 0) return;
+            if (taken > quantity) {
+                alert("Taken quantity exceeds current quantity.");
+                return;
+        }
+
+        const medicineDoc = doc (db, "medicine", userid, "stock", id);
+        const newQty = quantity - taken;
+
+        await updateDoc(medicineDoc, {quantity: newQty});
+
+        const usageColRef = collection(db, "medicine", userid, "stock", id, "usage");
+        await addDoc(usageColRef, {
+            name: medName,
+            taken: taken,
+            before: quantity, 
+            after: newQty, 
+            takenAt: serverTimestamp(),
+            by: user?.uid || null 
+        });
+        setSubtractBtnPopup(false);
+        getMedicineList();
+        } catch (err) {
+            console.error(err);
+            alert("Error updating quantity. Please try again.");
+        }
     }
 
     function burgerNavBar() {
@@ -215,13 +239,14 @@ const Home = () => {
                 <>
                 <SubtractMedicinePopup setTrigger = {setSubtractBtnPopup} trigger={subtractBtnPopup}>
                     <h3>Subtract Medicine Items</h3>
+                    <h4>{selectedName}</h4>
                     <h3>Current Quantity: {currentQty}</h3>
                     <input
                             placeholder="Quantity Taken"
                             type="number"
                             min="0"
                             onChange={(e) => setTakenQuantity(Number(e.target.value))} />
-                    <button style={{margin:"5px"}} onClick={() => subtractMedicineQuantity(selectedId, currentQty, takenQuantity)}>Confirm</button>
+                    <button style={{margin:"5px"}} onClick={() => subtractMedicineQuantity(selectedId, currentQty, takenQuantity, selectedName)}>Confirm</button>
                 </SubtractMedicinePopup>
 
                 <QrPopup setTrigger = {setQRPopup} trigger={qrPopup}>
@@ -507,6 +532,7 @@ const Home = () => {
                                                 setTakenQuantity(0);
                                                 setSelectedId(medicine.id);
                                                 setCurrentQty(medicine.quantity);
+                                                setSelectedName(medicine.name);
                                             } }>Take</button>
                                             <button onClick={() => {
                                                 showQrCode(medicine.id, medicine.name, medicine.dosage);
