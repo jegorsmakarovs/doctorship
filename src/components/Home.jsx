@@ -112,15 +112,14 @@ const Home = () => {
                 const medicineCollectionRef =  collection (db, "medicine", userid, "stock");
                 const q = query(medicineCollectionRef, orderBy("name", "asc"));
                 const data = await getDocs(q);
-                const filteredData = data.docs.map((doc) => ({
-                    ...doc.data(), 
-                    id: doc.id
-                }));
-                
-                setMedicineList(filteredData);
-                filteredData.map((medicine) => (
-                    medicine.quantity <=0 ? deleteMedicine (medicine.id) : null
-                ));
+                const allMedicines = data.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    }));
+                const filteredMedicines = allMedicines.filter(
+      (medicine) => medicine.quantity > 0
+    );
+                setMedicineList(filteredMedicines);
             } catch (err) {
                 console.error(err);
             }
@@ -222,26 +221,14 @@ const Home = () => {
     //RENDER PART
     return (
         <>
-            {/*<nav>
-            <h1 style={{ color: "white" }}>
-                 Medicine
-            </h1>
-            <div>
-            <button className="addMedButton" onClick={() => navigate("/")}>
-                Scan QR Code
-            </button>
-            <button className="addMedButton" onClick={() => navigate("/auth")}>
-                {user ? "Account" : "Log in / Register"}
-            </button>
-            </div>
-            </nav> */}
+           
             {(user && !loading) ? (
 
                 <><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></link><div className={topNav} id="myTopnav">
                     <a href="/" className="active">DOCTORSHIP</a>
                     <a id="account" href="/auth">{user ? "Account" : "Log in / Register"}</a>
                     <a href="/qrscan">{user ? "Scan QR" : null}</a>
-                    <a href="/history">History</a>
+                    <a href="/history">Medical Logbook</a>
                     <a href="javascript:void(0);" className="icon" onClick={burgerNavBar}>
                         <i className="fa fa-bars"></i>
                     </a>
@@ -253,7 +240,7 @@ const Home = () => {
                         placeholder="Search by medicine name..."
                         value={searchTerm}
                         onChange={(e)=> setSearchTerm(e.target.value)}
-                        style={{width: "100%", maxWidth: 480, padding: 8, borderRadius: 8, border: "1px solid #ccc"}}
+                        style={{width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ccc"}}
                     />
                     {searchTerm && (
                         <button onClick={() => setSearchTerm("")} style={{marginLeft: 8}}>Clear</button>
