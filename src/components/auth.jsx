@@ -13,12 +13,13 @@ export const Auth = () => {
     const [email, setEmail] = useState(""); // State to hold email input
     const [password, setPassword] = useState(""); // State to hold password input
     const location = useLocation();
-     let { login } = location.state || {};
+    let { login } = location.state || {};
     const [user, setUser] = useState(null);
     const [shipName, setShipName] = useState("Ever Given");
     const [IMO, setIMO] = useState("12345678");
     const [Crew, setCrew] = useState(0);
-     const [voyageType, setVoyageType] = useState("A");
+    const [imdgShip, setImdgShip] = useState(false);
+    const [voyageType, setVoyageType] = useState("A");
 
 
     const [loading, setLoading] = useState(true);
@@ -47,6 +48,7 @@ export const Auth = () => {
                         shipName: shipName,
                         IMO: IMO,
                         crew:Crew,
+                        imdgShip: imdgShip,
                         voyageType: voyageType,
                     });
                 } catch (err) {
@@ -152,7 +154,21 @@ export const Auth = () => {
                         placeholder="IMO Number"
                         onChange={(e) => setIMO(e.target.value)}
                     />
-                    <label htmlFor="crewInput">Number of crew on board</label>
+
+                    <label htmlFor="crewInput">Сrew on board:
+                        {/* INFO ICON */}
+                        <div className="info-icon">
+                            i
+                            <span className="tooltip-text">
+                                Enter the total number of people currently onboard: <br/><br/>
+                                • Officers<br/>
+                                • Ratings<br/>
+                                • Supernumeraries<br/>
+                                • Technical staff / inspectors<br/><br/>
+                                ❗ Do NOT include passengers.
+                            </span>
+                        </div>
+                    </label>
                     <input
                     value={Crew}
                         type="number"
@@ -160,26 +176,53 @@ export const Auth = () => {
                         placeholder="Crew on Board"
                         onChange={(e) => setCrew(Number(e.target.value))}
                     />
-                    <small className="hint-text">
-                    Include officers, ratings, and all personnel currently onboard.
-                    </small>
+
+                    <div
+                    className="imdg-checkbox"
+                    style={{
+                        margin: "8px 0 16px 0",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                    }}
+                    >
+                    <input
+                        type="checkbox"
+                        id="imdgShip"
+                        checked={imdgShip}
+                        onChange={(e) => setImdgShip(e.target.checked)}
+                        style={{ width: "18px", height: "18px" }}
+                    />
+
+                    <label htmlFor="imdgShip" style={{ cursor: "pointer" }}>
+                        IMDG ship{" "}
+                    {/* INFO ICON */}
+                    <div className="info-icon">
+                    i
+                    <span className="tooltip-text">
+                        Ship certified to carry dangerous goods.
+                    </span>
+                    </div>
+                    </label>
+                    </div>
+
                     <fieldset>
-  <legend>Select type of voyages:</legend>
-  <div className="radio-group">
-    <label className="radio-item">
-      <input type="radio" name="voyageType" value="A"  onChange={(e) => setVoyageType(e.target.value)}/>
-      Ocean going vessel
-    </label>
-    <label className="radio-item">
-      <input type="radio" name="voyageType" value="B" onChange={ (e) =>setVoyageType(e.target.value)} />
-      Not more than 24 hours from port
-    </label>
-    <label className="radio-item">
-      <input type="radio" name="voyageType" value="C" onChange={ (e) =>setVoyageType(e.target.value)} />
-      Not more than 2 hours from port
-    </label>
-  </div>
-</fieldset>
+                    <legend>Select type of voyages:</legend>
+                    <div className="radio-group">
+                        <label className="radio-item">
+                        <input type="radio" name="voyageType" value="A"  onChange={(e) => setVoyageType(e.target.value)}/>
+                        Ocean going vessel
+                        </label>
+                        <label className="radio-item">
+                        <input type="radio" name="voyageType" value="B" onChange={ (e) =>setVoyageType(e.target.value)} />
+                        Not more than 24 hours from port
+                        </label>
+                        <label className="radio-item">
+                        <input type="radio" name="voyageType" value="C" onChange={ (e) =>setVoyageType(e.target.value)} />
+                        Not more than 2 hours from port
+                        </label>
+                    </div>
+                    </fieldset>
                     
                     
                     <button onClick={signIn}>Register</button>
