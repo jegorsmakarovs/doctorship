@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import {auth} from "../config/firebase";
 import {db} from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import {getDocs, getDoc, collection, doc, addDoc, deleteDoc, arrayUnion, updateDoc} from "firebase/firestore"
+import {getDocs, getDoc, collection, doc, addDoc, deleteDoc, arrayUnion, updateDoc, serverTimestamp} from "firebase/firestore"
 import "./ComponentCSS/Item.css"
 import { useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
@@ -81,14 +81,38 @@ const Item = () => {
                 
         }
 
-       const subtractMedicineQuantity = async (id, quantity, taken) => {
-               const medicineDoc = doc (db, "medicine", userid, "stock", id);
-               await updateDoc(medicineDoc, {quantity: (quantity-taken)});
-               setTakenMedicine(0);
-               getMedicineList();
-               
-          }   
+       const subtractMedicineQuantity = async (id, quantity, taken, medName) => {
+        try{
+          if (!taken || taken <= 0) return;
+          if (taken > quantity) {
+            alert(`Cannot take more than available quantity (${quantity})`);
+            return;
+          }
+          const medicineDoc = doc(db, "medicine", userid, "stock", id);
+          const newQty = quantity - taken;
 
+          await updateDoc(medicineDoc, { quantity: newQty });
+
+          const usageColRef = collection(db, "medicine", userid, "stock", id, "usage");
+          await addDoc(usageColRef, {
+            name: medName,
+            taken: taken,
+            before: quantity,
+            after: newQty,
+            takenAt: serverTimestamp(),
+            by: user?.uid || null,
+            recipientName: "",
+            diagnosis: ""
+          });
+
+          setTakenMedicine(0);
+          getMedicineList();
+        } catch (error) {
+          console.error("Error taking medicine: ", error);
+          alert("An error occurred while taking the medicine. Please try again.");
+        }
+      };
+      
       const deleteMedicine = async (id) => {
             
               const logCollectionRef = collection(db, "medicine", userid, "destroyedStock");
@@ -160,8 +184,8 @@ const Item = () => {
                           ? "Packs: " + Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs + '
                           + (medicineQuantity - (Math.floor(medicineQuantity / medicineTabletQuantity) * medicineTabletQuantity)) + ' ampoules'
                           : "Packs: " + Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs' : null}</h3><h3>Location: {medicineLocation}</h3><div className="take">
-                <input onChange={(e) => setTakenMedicine(e.target.value)} value={takenMedicine} type="number" min="0" placeholder="Amount" />
-                <button onClick={() => subtractMedicineQuantity(id, medicineQuantity, takenMedicine)}>Take</button>
+                <input onChange={(e) => setTakenMedicine(Number(e.target.value))} value={takenMedicine} type="number" min="0" placeholder="Amount" />
+                <button onClick={() => subtractMedicineQuantity(id, medicineQuantity, takenMedicine, medicineName)}>Take</button>
               </div><div className="itemBtns">
                 {/* <button onClick={() => navigate(-1)}>Take</button> */}
                 <button id="delete" onClick={() => deleteMedicine(id)}>Dispose</button>
