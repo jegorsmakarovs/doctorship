@@ -116,7 +116,7 @@ const saveDiagnosis = async (log) => {
 
   return (
     <div className="history-page">
-      <h2>Usage History</h2>
+      <h2>Medical Logbook</h2>
       {loading ? (
         <p>Loading logs...</p>
       ) : logs.length === 0 ? (
