@@ -146,12 +146,13 @@ export const Auth = () => {
                         placeholder="Ship's Name"
                         onChange={(e) => setShipName(e.target.value)}
                     />
-                <input
+                    <input
                         type="name"
                         id="regInput"
                         placeholder="IMO Number"
                         onChange={(e) => setIMO(e.target.value)}
                     />
+                    <label htmlFor="crewInput">Number of crew on board</label>
                     <input
                     value={Crew}
                         type="number"
@@ -159,6 +160,9 @@ export const Auth = () => {
                         placeholder="Crew on Board"
                         onChange={(e) => setCrew(Number(e.target.value))}
                     />
+                    <small className="hint-text">
+                    Include officers, ratings, and all personnel currently onboard.
+                    </small>
                     <fieldset>
   <legend>Select type of voyages:</legend>
   <div className="radio-group">
