@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import {auth} from "../config/firebase";
 import {db} from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import {getDocs, collection, doc, addDoc, deleteDoc, updateDoc, query, orderBy, serverTimestamp} from "firebase/firestore"
+import {getDocs, collection, doc, addDoc, deleteDoc, arrayUnion, 
+    updateDoc, query, orderBy, serverTimestamp} from "firebase/firestore"
 import 'bootstrap';
 import { useNavigate } from "react-router-dom";
 import AddMedicinePopup from "./AddMedicinePopup";
@@ -21,6 +22,8 @@ const Home = () => {
     const [size, setSize] = useState(100);
 
     const [topNav, setTopNav]= useState("topnav");
+
+    const [filterMode, setFilterMode] = useState("all"); 
 
     //NAVIGATION
     const navigate = useNavigate();
@@ -117,7 +120,7 @@ const Home = () => {
       id: doc.id,
     }));
                 const filteredMedicines = allMedicines.filter(
-      (medicine) => medicine.quantity > 0
+      (medicine) => medicine.quantity > 0 && !medicine.destroyed
     );
                 setMedicineList(filteredMedicines);
             } catch (err) {
@@ -134,11 +137,30 @@ const Home = () => {
     }, [user]);
 
     // FILTERED LIST
-    const filteredMedicines = useMemo(() => {
-        const term = searchTerm.trim().toLowerCase();
-        if (!term) return medicineList;
-        return medicineList.filter(m => (m.name || "").toLowerCase().includes(term));
-    }, [medicineList, searchTerm]);
+   const filteredMedicines = useMemo(() => {
+  const today = new Date();
+
+  // Step 1: Apply name search filter
+  const term = searchTerm.trim().toLowerCase();
+  let list = medicineList;
+  if (term) {
+    list = list.filter((m) => (m.name || "").toLowerCase().includes(term));
+  }
+
+  // Step 2: Apply expiry-based filter
+  if (filterMode === "expiring") {
+    return list.filter((m) => {
+      const daysTillExp = (new Date(m.expiryDate) - today) / (1000 * 60 * 60 * 24);
+      return daysTillExp > 0 && daysTillExp <= 90; // expiring soon
+    });
+  }
+
+  if (filterMode === "expired") {
+    return list.filter((m) => new Date(m.expiryDate) < today); // already expired
+  }
+
+  return list; // "all"
+}, [medicineList, searchTerm, filterMode]);
 
 
     //ADD MEDICINE TO FIRESTORE DATABASE
@@ -172,9 +194,37 @@ const Home = () => {
 
     //DELETE MEDICINE FROM FIRESTORE DATABASE
     const deleteMedicine = async (id) => {
-        const medicineDoc = doc (db, "medicine", userid, "stock", id);
-        await deleteDoc(medicineDoc);
-        getMedicineList();
+const logCollectionRef = collection(db, "medicine", userid, "destroyedStock");
+const data = await getDocs(logCollectionRef);
+const allLogs = data.docs.map((doc) => ({
+  ...doc.data(),
+  id: doc.id,
+}));
+
+// Filter logs where finished is not true (either false, undefined, or missing)
+const filteredLogs = allLogs.filter((log) => log.finished !== true);
+
+// Now console.log only their IDs
+if (filteredLogs.length > 0) {
+  console.log(filteredLogs[0].id);
+  const medicineDoc = doc (db, "medicine", userid, "stock", id);
+    await updateDoc(medicineDoc, {destroyed: true});
+    const logDoc = doc (db, "medicine", userid, "destroyedStock", filteredLogs[0].id);
+    await updateDoc(logDoc, {itemid: arrayUnion(id)});
+     getMedicineList();
+  
+} else {
+ const medicineDoc = doc (db, "medicine", userid, "stock", id);
+  await updateDoc(medicineDoc, {destroyed: true});
+  const docCollectionRef =  collection (db, "medicine", userid, "destroyedStock");
+            const docRef= await addDoc(docCollectionRef, {
+                 finished:false,
+                 itemid:[id],
+             });
+              getMedicineList();
+            }
+       
+       
     }
 
     //SUBTRACTS AMOUNT IN POPUP FROM QUANTITY OF MEDICINE
@@ -221,30 +271,41 @@ const Home = () => {
     //RENDER PART
     return (
         <>
-           
             {(user && !loading) ? (
-
                 <><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></link><div className={topNav} id="myTopnav">
                     <a href="/" className="active">DOCTORSHIP</a>
                     <a id="account" href="/auth">{user ? "Account" : "Log in / Register"}</a>
                     <a href="/qrscan">{user ? "Scan QR" : null}</a>
                     <a href="/history">Medical Logbook</a>
+                    <a href="/utillog">Disposal Log</a>
+                    <a href="/compliance">Compliance</a>
                     <a href="javascript:void(0);" className="icon" onClick={burgerNavBar}>
                         <i className="fa fa-bars"></i>
                     </a>
                 </div>
                 {/*Search input (desktop + mobile shared) */}
-                <div style={{padding: "10px 16px", background: "#f7f7f7"}}>
+                <div style={{padding: "10px 16px", background: "#0c75ddff"}}>
                     <input
                         type="text"
                         placeholder="Search by medicine name..."
                         value={searchTerm}
                         onChange={(e)=> setSearchTerm(e.target.value)}
-                        style={{width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ccc"}}
+                        style={{width: "71%", padding: 8, borderRadius: 20, border: "1px solid #ccc"}}
                     />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm("")} style={{marginLeft: 8}}>Clear</button>
-                    )}
+                    
+                        <button onClick={() => {setSearchTerm(""); setFilterMode("all");}} style={{ marginLeft: 8 }}>
+    Clear
+  </button>
+
+  <button onClick={() => setFilterMode("expiring")} style={{ marginLeft: 8 }}>
+    Show Expiring
+  </button>
+
+  <button onClick={() => setFilterMode("expired")} style={{ marginLeft: 8 }}>
+    Show Expired
+  </button>
+
+                   
                 </div></>
             ):null}
             {(user && !loading) ? (
@@ -483,7 +544,6 @@ const Home = () => {
 
             </>
                
-            
             ) : null}
             {(user && !loading) ? (
                 <><BrowserView>
@@ -549,7 +609,7 @@ const Home = () => {
                                             <button onClick={() => {
                                                 showQrCode(medicine.id, medicine.name, medicine.dosage);
                                             } }>QR Code</button>
-                                            <button id="delete" onClick={() => deleteMedicine(medicine.id)}>Delete</button>
+                                            <button id="delete" onClick={() => deleteMedicine(medicine.id)}>Dispose</button>
                                         </td>
                                     </tr>
 

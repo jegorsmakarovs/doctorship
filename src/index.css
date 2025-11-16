@@ -65,6 +65,88 @@ body {
 }
 /* The element to apply the animation to */
 
+.disposal-titles{
+    user-select: none;
+  margin: 0px;
+  margin-bottom: 0px;
+  
+  color: hsl(0, 0%, 100%);
+  padding-top: 15px;
+  padding-bottom: 15px;
+  letter-spacing: 5px;
+  font-size: 25px;
+  text-align: center;
+  background-color: #0A66C2;
+  font-weight: bold;
+  animation-name: textappear;
+  animation-duration: 2s;
+  
+}
+
+.latlonginput{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.latlonginput input {
+  height: 30px;
+  width: 200px;
+  border-radius: 30px;
+  padding: 5px;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top:15px;
+  margin-bottom: 15px;
+}
+.latlonginput select {
+  height: 30px;
+  width: 200px;
+  border-radius: 30px;
+  padding: 5px;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top:15px;
+  margin-bottom: 15px;
+}
+
+.pdf-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #000; /* optional backdrop */
+}
+
+.pdf-viewer {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.open-utilization-log button{
+  display: block;
+ 
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.disposalList{
+  margin-right: 40px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+    border: 1px solid black;
+    list-style-type: none;
+}
+
 .textDiv{
   
   left: 0;
@@ -244,10 +326,13 @@ button:disabled {
 .topnav {
   background-color: #0A66C2;
   overflow: hidden;
-  
-  
 }
 
+.compList{
+   padding-left: 300px;
+   padding-right: 300px;
+   
+}
 .name{
     background-color: rgb(0, 0, 0);
 }
@@ -433,9 +518,10 @@ th {
   animation-duration: 1s;
 }
 
-.loginRegistration input{
-    width: 15rem;
+.loginRegistration #regInput{
+    
     margin-bottom: 10px;
+    width: 15rem;
     height: 2rem;
     border-radius: 20px;
     padding: 10px;
@@ -470,6 +556,8 @@ th {
 background-color: #2478cb;
 }
 
+
+
 label{
     font-size: small;
     font-weight: bold;
@@ -488,5 +576,40 @@ label{
   gap: 15px;
 }
 
+fieldset {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 4px 8px;  /* smaller inner padding */
+  gap: 10px;
 
+}
 
+legend {
+  font-size: 14px;
+  font-weight: bold;
+  padding: 0 4px;
+  margin-bottom: 4px;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* very small vertical space between items */
+  margin: 0;
+  padding: 0;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* controls space between dot and text */
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+}
+
+.radio-item input[type="radio"] {
+  margin: 0;            /* removes default browser spacing */
+  transform: scale(0.9); /* optional: slightly smaller dot */
+  accent-color: #0A66C2; /* match your theme */
+}

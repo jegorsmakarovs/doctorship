@@ -1,8 +1,12 @@
 import {auth} from "../config/firebase";
 import {createUserWithEmailAndPassword, signInWithEmailAndPassword,signOut, onAuthStateChanged} from "firebase/auth";
+import {db} from "../config/firebase";
+import {getDocs, collection, doc, addDoc, deleteDoc, arrayUnion, 
+    updateDoc, query, orderBy, serverTimestamp} from "firebase/firestore"
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import { RadioGroup } from "@headlessui/react";
 
 export const Auth = () => {
 
@@ -11,6 +15,12 @@ export const Auth = () => {
     const location = useLocation();
      let { login } = location.state || {};
     const [user, setUser] = useState(null);
+    const [shipName, setShipName] = useState("Ever Given");
+    const [IMO, setIMO] = useState("12345678");
+    const [Crew, setCrew] = useState(0);
+     const [voyageType, setVoyageType] = useState("A");
+
+
     const [loading, setLoading] = useState(true);
     const [userid, setUserId] = useState (null);
         
@@ -29,7 +39,19 @@ export const Auth = () => {
     // Function to handle user registration
     const signIn = async () => {
         try {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const cred= await createUserWithEmailAndPassword(auth, email, password);
+        const userid = cred.user.uid;
+         const infoCollectionRef =  collection (db, "medicine", userid, "info")
+                try{
+                    const docRef= await addDoc(infoCollectionRef, {
+                        shipName: shipName,
+                        IMO: IMO,
+                        crew:Crew,
+                        voyageType: voyageType,
+                    });
+                } catch (err) {
+                    console.error(err);
+                    };
         navigate("/");
         } catch (err) {
             console.error(err);
@@ -86,12 +108,14 @@ export const Auth = () => {
                     <h2 onClick={() => navigate('/')}>DOCTORSHIP</h2>
                     
                     <input
+                    id="regInput"
                         type="email"
                         placeholder="Email"
                         onChange={(e) => setEmail(e.target.value)}
                     />
                     <input
                         type="password"
+                        id="regInput"
                         placeholder="Password"
                         onChange={(e) => setPassword(e.target.value)}
                     />
@@ -104,21 +128,55 @@ export const Auth = () => {
              <div className="backgr">
             <div className="loginRegistration">
                 <h2 onClick={() => navigate('/')}>DOCTORSHIP</h2>
-                 <input
-                        type="name"
-                        placeholder="Name"
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
                     <input
                         type="email"
+                        id="regInput"
                         placeholder="Email"
                         onChange={(e) => setEmail(e.target.value)}
                     />
                     <input
                         type="password"
+                        id="regInput"
                         placeholder="Password"
                         onChange={(e) => setPassword(e.target.value)}
                     />
+                    <input
+                        type="name"
+                        id="regInput"
+                        placeholder="Ship's Name"
+                        onChange={(e) => setShipName(e.target.value)}
+                    />
+                <input
+                        type="name"
+                        id="regInput"
+                        placeholder="IMO Number"
+                        onChange={(e) => setIMO(e.target.value)}
+                    />
+                    <input
+                    value={Crew}
+                        type="number"
+                        id="regInput"
+                        placeholder="Crew on Board"
+                        onChange={(e) => setCrew(Number(e.target.value))}
+                    />
+                    <fieldset>
+  <legend>Select type of voyages:</legend>
+  <div className="radio-group">
+    <label className="radio-item">
+      <input type="radio" name="voyageType" value="A"  onChange={(e) => setVoyageType(e.target.value)}/>
+      Ocean going vessel
+    </label>
+    <label className="radio-item">
+      <input type="radio" name="voyageType" value="B" onChange={ (e) =>setVoyageType(e.target.value)} />
+      Not more than 24 hours from port
+    </label>
+    <label className="radio-item">
+      <input type="radio" name="voyageType" value="C" onChange={ (e) =>setVoyageType(e.target.value)} />
+      Not more than 2 hours from port
+    </label>
+  </div>
+</fieldset>
+                    
                     
                     <button onClick={signIn}>Register</button>
 

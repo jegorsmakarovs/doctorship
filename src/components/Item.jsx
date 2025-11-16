@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import {auth} from "../config/firebase";
 import {db} from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import {getDocs, getDoc, collection, doc, addDoc, deleteDoc, updateDoc} from "firebase/firestore"
+import {getDocs, getDoc, collection, doc, addDoc, deleteDoc, arrayUnion, updateDoc} from "firebase/firestore"
 import "./ComponentCSS/Item.css"
 import { useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
@@ -25,7 +25,8 @@ const Item = () => {
     const [medicineLocation, setMedicineLocation] = useState("");
     const [medicineQuantity, setMedicineQuantity] = useState(null);
     const [medicineTabletQuantity, setMedicineTabletQuantity] = useState(1);
-    const [typeMedicine, setTypeMedicine] = useState('None');
+    const [destroyed, setDestroyed] = useState(false);
+    const [typeMedicine, setTypeMedicine] = useState("");
     
     const [takenMedicine, setTakenMedicine] = useState(0);
 
@@ -75,6 +76,7 @@ const Item = () => {
                 setMedicineQuantity(snapshot.data().quantity);
                 setMedicineTabletQuantity(snapshot.data().tabletInPack);
                 setTypeMedicine(snapshot.data().medicineType);
+                setDestroyed(snapshot.data().destroyed);
                 }
                 
         }
@@ -88,8 +90,34 @@ const Item = () => {
           }   
 
       const deleteMedicine = async (id) => {
-              const medicineDoc = doc (db, "medicine", userid, "stock", id);
-              await deleteDoc(medicineDoc);
+            
+              const logCollectionRef = collection(db, "medicine", userid, "destroyedStock");
+              const data = await getDocs(logCollectionRef);
+              const allLogs = data.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id,
+              }));
+              
+              // Filter logs where finished is not true (either false, undefined, or missing)
+              const filteredLogs = allLogs.filter((log) => log.finished !== true);
+              
+              // Now console.log only their IDs
+              if (filteredLogs.length > 0) {
+                console.log(filteredLogs[0].id);
+                const medicineDoc = doc (db, "medicine", userid, "stock", id);
+                  await updateDoc(medicineDoc, {destroyed: true});
+                  const logDoc = doc (db, "medicine", userid, "destroyedStock", filteredLogs[0].id);
+                  await updateDoc(logDoc, {itemid: arrayUnion(id)});
+                
+              } else {
+               const medicineDoc = doc (db, "medicine", userid, "stock", id);
+                      await updateDoc(medicineDoc, {destroyed: true});
+                      const docCollectionRef =  collection (db, "medicine", userid, "destroyedStock");
+                          const docRef= await addDoc(docCollectionRef, {
+                               finished:false,
+                               itemid:id,
+                           });
+                          }
               navigate(-1);
           }
     
@@ -105,50 +133,41 @@ const Item = () => {
     <>
     <div className="back">
       <div className="item-inner">
-    <h1>{medicineName} {medicineDosage}</h1>
-    <h2>{typeMedicine !="SingleItem" ? typeMedicine : null}</h2>
-    <h3 className = { compareDates(currentDate, medicineExpiryDate) }>Expiry Date: {formatDate(medicineExpiryDate)}</h3>
-          <h3>Total Quantity: {
-                        typeMedicine === "Bottles" ? 
-                        (medicineQuantity + ' bottles') 
+        {destroyed || medicineQuantity<=0 ? <h3>Medicine is disposed or finished</h3> : 
+    <><h1>{medicineName} {medicineDosage}</h1><h2>{typeMedicine != "SingleItem" ? typeMedicine : null}</h2><h3 className={compareDates(currentDate, medicineExpiryDate)}>{compareDates(currentDate, medicineExpiryDate)=="danger"? "EXPIRED:" : "Expiry Date:" } {formatDate(medicineExpiryDate)}</h3><h3>Total Quantity: {typeMedicine === "Bottles" ?
+              (medicineQuantity + ' bottles')
 
-                        /* SHOW IN TABLE IF SELECTED SINGLE ITEM */
-                        : typeMedicine === "SingleItem" ? 
-                        (medicineQuantity + ' pcs')
+              /* SHOW IN TABLE IF SELECTED SINGLE ITEM */
+              : typeMedicine === "SingleItem" ?
+                (medicineQuantity + ' pcs')
 
-                        /* SHOW IN TABLE IF SELECTED AMPOULES */
-                        : typeMedicine === "Ampoules" ? 
-                        (medicineQuantity + ' ampoules')
+                /* SHOW IN TABLE IF SELECTED AMPOULES */
+                : typeMedicine === "Ampoules" ?
+                  (medicineQuantity + ' ampoules')
 
-                        /* SHOW IN TABLE IF SELECTED TABLETS */
-                        : typeMedicine === "Tablets" ? 
-                        (medicineQuantity + ' tablets')
+                  /* SHOW IN TABLE IF SELECTED TABLETS */
+                  : typeMedicine === "Tablets" ?
+                    (medicineQuantity + ' tablets')
 
-                        : 
-                        (null)
-      }</h3>
-      <h3>{
-        typeMedicine === "Tablets" ?
-                        ((medicineQuantity / medicineTabletQuantity)%1) !== 0
-                         ? "Packs: "+ Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs + ' 
-                         + (medicineQuantity - (Math.floor(medicineQuantity / medicineTabletQuantity) * medicineTabletQuantity)) + ' tablets'
-                         : "Packs: "+Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs' :
-        typeMedicine === "Ampoules" ? 
-                        ((medicineQuantity / medicineTabletQuantity)%1) !== 0
-                         ? "Packs: "+ Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs + ' 
-                         + (medicineQuantity - (Math.floor(medicineQuantity / medicineTabletQuantity) * medicineTabletQuantity)) + ' ampoules'
-                         : "Packs: "+ Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs': null
-        }</h3>
-        <h3>Location: {medicineLocation}</h3>
-        <div className="take">
-        <input onChange={(e) => setTakenMedicine(e.target.value)} value={takenMedicine} type="number" min="0" placeholder="Amount"/>
-        <button onClick={() => subtractMedicineQuantity(id, medicineQuantity, takenMedicine)}>Take</button>
-        </div>
-        <div className="itemBtns">
-        {/* <button onClick={() => navigate(-1)}>Take</button> */}
-        <button id="delete" onClick={() => deleteMedicine(id)}>Delete</button>
-        <button onClick={() => navigate(-1)}>Back</button>
-        </div>
+                    :
+                    (null)}</h3><h3>{typeMedicine === "Tablets" ?
+                      ((medicineQuantity / medicineTabletQuantity) % 1) !== 0
+                        ? "Packs: " + Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs + '
+                        + (medicineQuantity - (Math.floor(medicineQuantity / medicineTabletQuantity) * medicineTabletQuantity)) + ' tablets'
+                        : "Packs: " + Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs' :
+                      typeMedicine === "Ampoules" ?
+                        ((medicineQuantity / medicineTabletQuantity) % 1) !== 0
+                          ? "Packs: " + Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs + '
+                          + (medicineQuantity - (Math.floor(medicineQuantity / medicineTabletQuantity) * medicineTabletQuantity)) + ' ampoules'
+                          : "Packs: " + Math.floor(medicineQuantity / medicineTabletQuantity) + ' packs' : null}</h3><h3>Location: {medicineLocation}</h3><div className="take">
+                <input onChange={(e) => setTakenMedicine(e.target.value)} value={takenMedicine} type="number" min="0" placeholder="Amount" />
+                <button onClick={() => subtractMedicineQuantity(id, medicineQuantity, takenMedicine)}>Take</button>
+              </div><div className="itemBtns">
+                {/* <button onClick={() => navigate(-1)}>Take</button> */}
+                <button id="delete" onClick={() => deleteMedicine(id)}>Dispose</button>
+                <button onClick={() => navigate(-1)}>Back</button>
+              </div></>
+        }
     </div>
     </div>
     </>
