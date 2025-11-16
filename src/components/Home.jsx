@@ -176,6 +176,12 @@ const Home = () => {
                 tabletInPack:newMedicineTabletQuantity,
                 quantity: newMedicineQuantity * newMedicineTabletQuantity,
             });
+            
+            // adding field docID = ID of the document
+            await updateDoc(doc(db, "medicine", userid, "stock", docRef.id), {
+                docID: docRef.id
+            });
+
             showQrCode(docRef.id,newMedicineName, newMedicineDosage)
             setNewMedicineName("");
             setSelectedTypeMedicine("None");
