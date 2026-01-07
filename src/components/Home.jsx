@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {auth} from "../config/firebase";
 import {db} from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import {getDocs, collection, doc, addDoc, deleteDoc, arrayUnion, 
+import {getDocs, collection, doc, addDoc, arrayUnion, 
     updateDoc, query, orderBy, serverTimestamp} from "firebase/firestore"
 import 'bootstrap';
 import { useNavigate } from "react-router-dom";
@@ -17,9 +17,9 @@ import {BrowserView, MobileView} from 'react-device-detect';
 const Home = () => {
 
     //QR
-    const [back, setBack] = useState('#FFFFFF');
-    const [fore, setFore] = useState('#000000');
-    const [size, setSize] = useState(100);
+    const fore = "#000000";
+    const back = "#ffffff";
+    const size = 150;
 
     const [topNav, setTopNav]= useState("topnav");
 
@@ -109,32 +109,36 @@ const Home = () => {
         setQrDose(dose);
     }
 
-    //READ MEDICINE LIST FROM FIRESTORE DATABASE
-    const getMedicineList = async () => {
-            try{
-                const medicineCollectionRef =  collection (db, "medicine", userid, "stock");
-                const q = query(medicineCollectionRef, orderBy("name", "asc"));
-                const data = await getDocs(q);
-                const allMedicines = data.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    }));
-                const filteredMedicines = allMedicines.filter(
-      (medicine) => medicine.quantity > 0 && !medicine.destroyed
-    );
-                setMedicineList(filteredMedicines);
-            } catch (err) {
-                console.error(err);
-            }
-    }
 
-    //ON PAGE LOAD GET MEDICINE LIST
+    // READ MEDICINE LIST FROM FIRESTORE DATABASE
+    const getMedicineList = useCallback(async () => {
+    if (!userid) return;
+
+    try {
+        const medicineCollectionRef = collection(db, "medicine", userid, "stock");
+        const q = query(medicineCollectionRef, orderBy("name", "asc"));
+        const data = await getDocs(q);
+
+        const allMedicines = data.docs.map((d) => ({
+        ...d.data(),
+        id: d.id,
+        }));
+
+        const filteredMedicines = allMedicines.filter(
+        (medicine) => medicine.quantity > 0 && !medicine.destroyed
+        );
+
+        setMedicineList(filteredMedicines);
+    } catch (err) {
+        console.error(err);
+    }
+    }, [userid]); 
+
+    // ON PAGE LOAD / WHEN userid CHANGES GET MEDICINE LIST
     useEffect(() => {
-        if (userid){
-            getMedicineList();
-            
-        }
-    }, [user]);
+    getMedicineList();
+    }, [getMedicineList]);
+
 
     // FILTERED LIST
    const filteredMedicines = useMemo(() => {
@@ -223,11 +227,12 @@ if (filteredLogs.length > 0) {
  const medicineDoc = doc (db, "medicine", userid, "stock", id);
   await updateDoc(medicineDoc, {destroyed: true});
   const docCollectionRef =  collection (db, "medicine", userid, "destroyedStock");
-            const docRef= await addDoc(docCollectionRef, {
+            const docRef = await addDoc(docCollectionRef, {
                  finished:false,
                  itemid:[id],
              });
-              getMedicineList();
+            console.log("Created destroyedStock doc:", docRef.id);
+                getMedicineList();
             }
        
        
